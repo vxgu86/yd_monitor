@@ -1,4 +1,4 @@
-# yd_monitor
+# robot_monitor
 监控机器人定位的性能  
 ## 1.监听定位发送频率  
 ## 2.监听定位 buffer size  
@@ -9,3 +9,6 @@
 
 # 启动
 ### roslaunch robot_monitor robot_monitor.launch
+
+# robot_daemon
+进程守护
