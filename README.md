@@ -6,9 +6,8 @@
 当size 小于阈值发送开始命令  
 当size 大于处理极限（clear size）时清理buffer size  
 ## 3.使用 syslog 输出日志到 /var/log/syslog 方便统一查看
-
-# 启动
-### roslaunch robot_monitor robot_monitor.launch
+## 启动
+roslaunch robot_monitor robot_monitor.launch
 
 # robot_daemon
 进程守护
