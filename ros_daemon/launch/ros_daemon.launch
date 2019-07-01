@@ -1,0 +1,7 @@
+<launch>
+
+  <arg name="dataset" /> 
+  <node pkg="ros_daemon" name="ros_daemon" type="ros_daemon" output="screen">
+    <param name="topic" value="/hdl/heartbeat" />
+  </node>
+</launch>
