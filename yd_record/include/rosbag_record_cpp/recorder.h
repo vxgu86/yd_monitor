@@ -43,8 +43,8 @@
 
 #include <sys/stat.h>
 #if !defined(_MSC_VER)
-#include <termios.h>
-#include <unistd.h>
+  #include <termios.h>
+  #include <unistd.h>
 #endif
 #include <time.h>
 
@@ -66,54 +66,52 @@
 #include "rosbag/stream.h"
 #include "rosbag/macros.h"
 
-namespace rosbag_record_cpp
-{
+namespace rosbag_record_cpp {
 
 class ROSBAG_DECL OutgoingMessage
 {
 public:
-    OutgoingMessage(std::string const &_topic, topic_tools::ShapeShifter::ConstPtr _msg, boost::shared_ptr<ros::M_string> _connection_header, ros::Time _time);
+    OutgoingMessage(std::string const& _topic, topic_tools::ShapeShifter::ConstPtr _msg, boost::shared_ptr<ros::M_string> _connection_header, ros::Time _time);
 
-    std::string topic;
+    std::string                         topic;
     topic_tools::ShapeShifter::ConstPtr msg;
-    boost::shared_ptr<ros::M_string> connection_header;
-    ros::Time time;
+    boost::shared_ptr<ros::M_string>    connection_header;
+    ros::Time                           time;
 };
 
 class ROSBAG_DECL OutgoingQueue
 {
 public:
-    OutgoingQueue(std::string const &_filename, std::queue<OutgoingMessage> *_queue, ros::Time _time);
+    OutgoingQueue(std::string const& _filename, std::queue<OutgoingMessage>* _queue, ros::Time _time);
 
-    std::string filename;
-    std::queue<OutgoingMessage> *queue;
-    ros::Time time;
+    std::string                  filename;
+    std::queue<OutgoingMessage>* queue;
+    ros::Time                    time;
 };
 
 struct ROSBAG_DECL RecorderOptions
 {
     RecorderOptions();
 
-    bool trigger;
-    bool record_all;
-    bool regex;
-    bool do_exclude;
-    bool quiet;
-    bool append_date;
-    bool snapshot;
-    bool verbose;
+    bool            trigger;
+    bool            record_all;
+    bool            regex;
+    bool            do_exclude;
+    bool            quiet;
+    bool            append_date;
+    bool            snapshot;
+    bool            verbose;
     rosbag::CompressionType compression;
-    std::string prefix;
-    std::string name;
-    boost::regex exclude_regex;
-    uint32_t buffer_size;
-    uint32_t chunk_size;
-    uint32_t limit;
-    bool split;
-    uint32_t max_size;
-    ros::Duration max_duration;
-    std::string node;
-    std::string filename;
+    std::string     prefix;
+    std::string     name;
+    boost::regex    exclude_regex;
+    uint32_t        buffer_size;
+    uint32_t        chunk_size;
+    uint32_t        limit;
+    bool            split;
+    uint32_t        max_size;
+    ros::Duration   max_duration;
+    std::string     node;
 
     std::vector<std::string> topics;
 };
@@ -121,17 +119,15 @@ struct ROSBAG_DECL RecorderOptions
 class ROSBAG_DECL Recorder2
 {
 public:
-    Recorder2(RecorderOptions const &options);
+    Recorder2(RecorderOptions const& options);
 
     void doTrigger();
 
-    bool isSubscribed(std::string const &topic) const;
+    bool isSubscribed(std::string const& topic) const;
 
-    boost::shared_ptr<ros::Subscriber> subscribe(std::string const &topic);
+    boost::shared_ptr<ros::Subscriber> subscribe(std::string const& topic);
 
-    int run(bool *stop_recording = NULL);
-
-    std::string target_filename_;
+    int run(bool* stop_recording = NULL);
 
 private:
     void printUsage();
@@ -146,52 +142,53 @@ private:
 
     void snapshotTrigger(std_msgs::Empty::ConstPtr trigger);
     //    void doQueue(topic_tools::ShapeShifter::ConstPtr msg, std::string const& topic, boost::shared_ptr<ros::Subscriber> subscriber, boost::shared_ptr<int> count);
-    void doQueue(ros::MessageEvent<topic_tools::ShapeShifter const> msg_event, std::string const &topic, boost::shared_ptr<ros::Subscriber> subscriber, boost::shared_ptr<int> count);
+    void doQueue(ros::MessageEvent<topic_tools::ShapeShifter const> msg_event, std::string const& topic, boost::shared_ptr<ros::Subscriber> subscriber, boost::shared_ptr<int> count);
     void doRecord();
     bool checkSize();
-    bool checkDuration(const ros::Time &);
+    bool checkDuration(const ros::Time&);
     void doRecordSnapshotter();
-    void doCheckMaster(ros::TimerEvent const &e, ros::NodeHandle &node_handle);
+    void doCheckMaster(ros::TimerEvent const& e, ros::NodeHandle& node_handle);
 
-    bool shouldSubscribeToTopic(std::string const &topic, bool from_node = false);
+    bool shouldSubscribeToTopic(std::string const& topic, bool from_node = false);
 
-    template <class T>
+    template<class T>
     static std::string timeToStr(T ros_t);
 
 private:
-    RecorderOptions options_;
+    RecorderOptions               options_;
 
-    rosbag::Bag bag_;
+    rosbag::Bag                           bag_;
 
-    std::string write_filename_;
+    std::string                   target_filename_;
+    std::string                   write_filename_;
 
-    std::set<std::string> currently_recording_; //!< set of currenly recording topics
-    int num_subscribers_;                       //!< used for book-keeping of our number of subscribers
+    std::set<std::string>         currently_recording_;  //!< set of currenly recording topics
+    int                           num_subscribers_;      //!< used for book-keeping of our number of subscribers
 
-    int exit_code_; //!< eventual exit code
+    int                           exit_code_;            //!< eventual exit code
 
-    boost::condition_variable_any queue_condition_; //!< conditional variable for queue
-    boost::mutex queue_mutex_;                      //!< mutex for queue
-    std::queue<OutgoingMessage> *queue_;            //!< queue for storing
-    uint64_t queue_size_;                           //!< queue size
-    uint64_t max_queue_size_;                       //!< max queue size
+    boost::condition_variable_any queue_condition_;      //!< conditional variable for queue
+    boost::mutex                  queue_mutex_;          //!< mutex for queue
+    std::queue<OutgoingMessage>*  queue_;                //!< queue for storing
+    uint64_t                      queue_size_;           //!< queue size
+    uint64_t                      max_queue_size_;       //!< max queue size
 
-    uint64_t split_count_; //!< split count
+    uint64_t                      split_count_;          //!< split count
 
-    std::queue<OutgoingQueue> queue_queue_; //!< queue of queues to be used by the snapshot recorders
+    std::queue<OutgoingQueue>     queue_queue_;          //!< queue of queues to be used by the snapshot recorders
 
-    ros::Time last_buffer_warn_;
+    ros::Time                     last_buffer_warn_;
 
-    ros::Time start_time_;
+    ros::Time                     start_time_;
 
-    bool writing_enabled_;
-    boost::mutex check_disk_mutex_;
-    ros::WallTime check_disk_next_;
-    ros::WallTime warn_next_;
+    bool                          writing_enabled_;
+    boost::mutex                  check_disk_mutex_;
+    ros::WallTime                 check_disk_next_;
+    ros::WallTime                 warn_next_;
 
-    bool *stop_recording_; //!< used to end recording via a parent application
+    bool*                         stop_recording_;       //!< used to end recording via a parent application
 };
 
-} // namespace rosbag_record_cpp
+} // namespace rosbag
 
 #endif

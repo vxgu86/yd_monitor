@@ -12,7 +12,7 @@ int seconds;
 
 void cmdCallback(const std_msgs::Int16::ConstPtr &msg)
 {
-  ROS_INFO_STREAM("msg: " << msg->data);
+  ROS_INFO_STREAM("msg>>>>: " << msg->data);
   //1 start 0 end
   if (msg->data == 1)
   {
@@ -24,12 +24,22 @@ void cmdCallback(const std_msgs::Int16::ConstPtr &msg)
   }
 }
 
+void *update(void *tmp)
+{
+  ros::NodeHandle *p = (ros::NodeHandle *)tmp;
+  ros::Subscriber sub = p->subscribe<std_msgs::Int16>("/yd_record/cmd", 1, cmdCallback);
+  ros::spin();
+}
+
 int main(int argc, char **argv)
 {
   ROS_INFO_STREAM_NAMED("yd_record", "yd_record");
   ros::init(argc, argv, "yd_record");
   ros::NodeHandle nh;
-  ros::Subscriber sub = nh.subscribe<std_msgs::Int16>("/yd_record/cmd", 1, cmdCallback);
+
+  pthread_t tid;
+  pthread_create(&tid, NULL, update, (void *)&nh);
+  //ros::Subscriber sub = nh.subscribe<std_msgs::Int16>("/yd_record/cmd", 1, cmdCallback);
 
   rosbag_record_cpp::ROSBagRecord recorder;
 
@@ -63,13 +73,15 @@ int main(int argc, char **argv)
   isRecord = false;
   isStop = false;
   ros::Rate loop_rate(1);
+  std::vector<std::string> delete_files;
   while (ros::ok())
   {
+    t = ros::Time::now();
     ROS_INFO_STREAM("yd_record Recording ... ");
     //stop
     if (isStop && isRecord)
     {
-      ROS_INFO_STREAM("yd_record stopRecording ... ");
+      ROS_INFO_STREAM("yd_record isStop 1");
       recorder.stopRecording();
       isRecord = false;
     }
@@ -77,6 +89,7 @@ int main(int argc, char **argv)
     // Start
     if (!isRecord && !isStop)
     {
+      ROS_INFO_STREAM("yd_record Start 2");
       recorder.startRecording(options);
       start_time = ros::Time::now();
       isRecord = true;
@@ -85,12 +98,14 @@ int main(int argc, char **argv)
     //ros::Duration(1.0).sleep();
     if (t - start_time > duration && isRecord)
     {
+      ROS_INFO_STREAM("yd_record Stop 3");
       // Stop
       recorder.stopRecording();
 
       //delete
       boost::filesystem::recursive_directory_iterator beg_iter(path_save);
       boost::filesystem::recursive_directory_iterator end_iter;
+      delete_files.clear();
       for (; beg_iter != end_iter; ++beg_iter)
       {
         if (boost::filesystem::is_directory(*beg_iter))
@@ -100,17 +115,26 @@ int main(int argc, char **argv)
         else
         {
           std::string strPath = beg_iter->path().string(); //遍历出来的文件名称
-          ROS_INFO_STREAM("strPath " << strPath);
-          std::string::size_type end_postion = strPath.find(".bag");
-          std::string::size_type name_postion = strPath.find(file_name);
-          if (end_postion != std::string::npos && name_postion != std::string::npos)
+          if (boost::filesystem::exists(strPath))
           {
-            boost::filesystem::remove(strPath);
-            break;
+            ROS_INFO_STREAM("exists strPath " << strPath);
+            std::string::size_type end_postion = strPath.find(".bag");
+            std::string::size_type name_postion = strPath.find(file_name);
+            if (end_postion != std::string::npos && name_postion != std::string::npos)
+            {
+
+              delete_files.push_back(strPath);
+            }
           }
         }
       }
-
+      //delete
+      int count = delete_files.size();
+      for (int i = 0; i < count; i++)
+      {
+        ROS_INFO_STREAM("delete strPath " << delete_files[i]);
+        boost::filesystem::remove(delete_files[i]);
+      }
       isRecord = false;
     }
     ros::spinOnce();

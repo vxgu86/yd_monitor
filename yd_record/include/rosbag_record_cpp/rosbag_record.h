@@ -61,6 +61,7 @@ namespace rosbag_record_cpp
 class ROSBagRecord
 {
 private:
+
   // Node Handles
   ros::NodeHandle nh_; // no namespace
 
@@ -70,6 +71,7 @@ private:
   boost::thread worker_thread_;
 
 public:
+
   /**
    * \brief Constructor
    */
@@ -82,9 +84,8 @@ public:
 
   void stopRecording();
 
-  std::string targetFile;
 };
 
-} // namespace rosbag_record_cpp
+} // namespace
 
 #endif

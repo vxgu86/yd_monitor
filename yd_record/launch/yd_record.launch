@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
 	<group ns="record">
-		<param name="path_save" type="str" value="/home/li/Downloads"	/>
+		<param name="path_save" type="str" value="/home/li/Downloads/bag"	/>
 		<param name="topic" 	type="str" value="/velodyne_points /odom_localization /laser_buffer_size"/>
 		<param name="file_name" type="str" value="record"	/>
         <param name="seconds" value="30"	/>
