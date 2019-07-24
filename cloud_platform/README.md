@@ -7,18 +7,18 @@
 水平和垂直角度的绝对零度：水平正前方。  
 
 ## 2.Pelco-D协议格式
-Synch Byte：同步字节，始终为 0xFF。
-Byte2：云台地址；0x01-0xFF。
-Byte7：累加和校验。
- 
-停止运动命令
-Byte1     	 Byte2   	Byte3	  Byte4	  Byte5	  Byte6	  Byte7
-SynchByte	  Address	  0x00	  0x00	  0x00	  0x00	Check Sum  
-
-向上运动命令
-Byte1   	Byte2	  Byte3	Byte4	Byte5	Byte6	Byte7
-SynchByte	Address	0x00	0x08	0x00	Data	Check Sum
-Data表示运行速度，范围是0x00~0x40之间的数值。
+Synch Byte：同步字节，始终为 0xFF。  
+Byte2：云台地址；0x01-0xFF。  
+Byte7：累加和校验。  
+   
+停止运动命令  
+Byte1     	 Byte2   	Byte3	  Byte4	  Byte5	  Byte6	  Byte7  
+SynchByte	  Address	  0x00	  0x00	  0x00	  0x00	Check Sum    
+  
+向上运动命令  
+Byte1   	Byte2	  Byte3	Byte4	Byte5	Byte6	Byte7  
+SynchByte	Address	0x00	0x08	0x00	Data	Check Sum  
+Data表示运行速度，范围是0x00~0x40之间的数值。  
 
 
 
