@@ -4,7 +4,10 @@ project(yd_record)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
+add_definitions(-std=c++11)
+
 find_package(catkin REQUIRED COMPONENTS
+  nodelet
   rosbag
   roscpp
   topic_tools
@@ -49,6 +52,6 @@ add_dependencies(rosbag_record ${catkin_EXPORTED_TARGETS}) # don't build until n
 
 add_executable(yd_record src/yd_record.cpp)
 target_link_libraries(yd_record rosbag_record ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-add_dependencies(yd_record ${catkin_EXPORTED_TARGETS}) # don't build until necessary msgs are finish
+#add_dependencies(yd_record ${catkin_EXPORTED_TARGETS}) # don't build until necessary msgs are finish
 
 
