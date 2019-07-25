@@ -33,15 +33,11 @@ float yd_distance;
 std::string topic;
 std::string conrtol_topic;
 std::string clear_buff_topic;
-std::string stop_hdl_topic;
-std::string jump_topic;
 int threshold_hz;
 int current_hz;
 int clear_buff_size;
 int clear_count;
 int threshold_buffer;
-int threshold_clear_count;
-int threshold_jump_time;
 int time_out_num;
 
 //const char *cpu_info;
@@ -51,7 +47,6 @@ bool isError;
 std_msgs::Int32 status;
 ros::Publisher control_pub;
 ros::Publisher clear_buff_pub;
-ros::Publisher stop_hdl_pub;
 std::string buffer_topic;
 
 void robotCallback(const nav_msgs::Odometry::ConstPtr &data)
@@ -67,7 +62,6 @@ void robotCallback(const nav_msgs::Odometry::ConstPtr &data)
   currentVe.y = current_pose.pose.pose.position.y;
   currentVe.z = current_pose.pose.pose.position.z;
   yd_distance = yd_vector3::Vector3::TwoPointDistance3D(currentVe, lastVe);
-  std::cout << "yd_distance:" << yd_distance << std::endl;
   //rotation
   geometry_msgs::Quaternion msg = current_pose.pose.pose.orientation;
   tf::Quaternion quat;
@@ -100,8 +94,24 @@ void robotCallback(const nav_msgs::Odometry::ConstPtr &data)
   else
   {
     syslog(LOG_INFO, "current_hz :%d", current_hz);
+    // if (isError)
+    // {
+    //   isError = false;
+    //   syslog("restart robot..." << time_out_num);
+    //   status.data = 1;
+    //   control_pub.publish(status);
+    // }
     time_out_num = 0;
   }
+  //syslog("time_out_num " << time_out_num);
+  // if (time_out_num >= 2 && !isError)
+  // {
+  //   isError = true;
+  //   time_out_num = 0;robot_monitor.launch
+  //   syslog("stop robot >< >< ><");
+  //   status.data = 0;
+  //   control_pub.publish(status);
+  // }
 
   last_pose = current_pose;
   lastVe = currentVe;
@@ -112,18 +122,6 @@ void systemCallback(const std_msgs::String::ConstPtr &msg)
 {
   cpu_info = msg->data.c_str();
   //std::cout << "cpu_info:" << cpu_info << std::endl;
-}
-
-void jumpCallback(const std_msgs::Int16::ConstPtr &msg)
-{
-  //在机器人坐标丢失，停止定位程序
-  if (msg->data > threshold_jump_time)
-  {
-    syslog(LOG_ERR, "stop hdl >< >< ><");
-    std_msgs::Bool status;
-    status.data = true;
-    stop_hdl_pub.publish(status);
-  }
 }
 
 void bufferCallback(const std_msgs::Int16::ConstPtr &msg)
@@ -141,20 +139,9 @@ void bufferCallback(const std_msgs::Int16::ConstPtr &msg)
     if (msg->data >= clear_buff_size && isError)
     {
       clear_count++;
-      if (clear_count > threshold_clear_count)
-      {
-        //机器人运算不足后触发停止定位程序
-        syslog(LOG_ERR, "stop hdl >< >< ><");
-        std_msgs::Bool status;
-        status.data = true;
-        stop_hdl_pub.publish(status);
-      }
-      else
-      {
-        std_msgs::Bool status;
-        status.data = true;
-        clear_buff_pub.publish(status);
-      }
+      std_msgs::Bool status;
+      status.data = true;
+      clear_buff_pub.publish(status);
     }
     syslog(LOG_INFO, "********************buffer size warnning************************");
     syslog(LOG_INFO, "HZ:%d", current_hz);
@@ -195,23 +182,17 @@ int main(int argc, char **argv)
   ros::param::get("/monitor/threshold_pos", threshold_pos);
   ros::param::get("/monitor/buffer_topic", buffer_topic);
   ros::param::get("/monitor/threshold_buffer", threshold_buffer);
-  ros::param::get("/monitor/stop_hdl_topic", stop_hdl_topic);
-  ros::param::get("/monitor/jump_topic", jump_topic);
-  ros::param::get("/monitor/threshold_jump_time", threshold_jump_time);
-  ros::param::get("/monitor/threshold_clear_count", threshold_clear_count);
+  ros::param::get("/monitor/clear_buff_topic", clear_buff_topic);
+  ros::param::get("/monitor/clear_buff_size", clear_buff_size);
   clear_count = 0;
-  std::cout << "stop_hdl_topic:" << stop_hdl_topic << std::endl;
-  std::cout << "jump_topic:" << jump_topic << std::endl;
   syslog(LOG_INFO, "topic:%s", topic);
   syslog(LOG_INFO, "control_topic:%s", conrtol_topic);
 
   ros::Subscriber system_sub = node.subscribe<std_msgs::String>("system/info", 1, &systemCallback);
   ros::Subscriber robot_sub = node.subscribe<nav_msgs::Odometry>(topic, 1, &robotCallback);
   ros::Subscriber buffer_sub = node.subscribe<std_msgs::Int16>(buffer_topic, 1, &bufferCallback);
-  ros::Subscriber jump_sub = node.subscribe<std_msgs::Int16>(jump_topic, 1, &jumpCallback);
   control_pub = node.advertise<std_msgs::Int32>(conrtol_topic, 1);
   clear_buff_pub = node.advertise<std_msgs::Bool>(clear_buff_topic, 1);
-  stop_hdl_pub = node.advertise<std_msgs::Bool>(stop_hdl_topic, 1);
 
   ros::ServiceServer service = node.advertiseService("/point/heartbeat", heartbeat);
 

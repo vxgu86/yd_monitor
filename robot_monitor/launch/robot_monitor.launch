@@ -10,6 +10,10 @@
     <param name="control_topic" value="/robot_position_status" />
     <param name="buffer_topic" value="laser_buffer_size" />
     <param name="clear_buff_topic" value="/test/clear_laser_buffer" />
+    <param name="stop_hdl_topic" value="robot_stop" />
+    <param name="jump_topic" value="/invalid_jump_counter" />
+    <param name="threshold_jump_time" value="3" />
+    <param name="threshold_clear_count" value="3" />
   </node>
    <node pkg="robot_monitor" name="system" type="system">
   </node>
