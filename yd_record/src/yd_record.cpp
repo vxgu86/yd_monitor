@@ -150,9 +150,9 @@ int main(int argc, char **argv)
 
   ros::NodeHandle nh;
 
-  pthread_t tid;
-  pthread_create(&tid, NULL, update, (void *)&nh);
-  //ros::Subscriber sub = nh.subscribe<std_msgs::Int16>("/yd_record/cmd", 1, cmdCallback);
+  //pthread_t tid;
+  //pthread_create(&tid, NULL, update, (void *)&nh);
+  ros::Subscriber sub = nh.subscribe<std_msgs::Int16>("/yd_record/cmd", 1, cmdCallback);
 
   rosbag_record_cpp::ROSBagRecord recorder;
 
