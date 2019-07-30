@@ -3,7 +3,7 @@
   <arg name="dataset" /> 
   <node pkg="robot_monitor" name="monitor" type="monitor" output="screen">
     <param name="robotpose_topic" value="/odom_localization" />
-    <param name="threshold_hz" value="14" />
+    <param name="threshold_hz" value="13" />
     <param name="threshold_pos" value="0.2" />
     <param name="threshold_buffer" value="5" />
     <param name="clear_buff_size" value="60" />
