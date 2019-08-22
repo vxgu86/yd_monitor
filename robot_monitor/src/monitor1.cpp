@@ -338,21 +338,21 @@ void monitor_ros_node::bufferCallback(const std_msgs::Int16::ConstPtr &msg)
     //std::cout << "laster_manual_count ++" << std::endl;
     //syslog(LOG_INFO, "laster_manual_count ++ ");
     laster_manual_count++;
-    if (isError && robot_is_stop)
-    {
-      clear_count = 0;
-      ostringstream oss;
-      oss.str("");
-      oss << "buffer size 小于阈值，恢复移动";
-      syslog(LOG_INFO, oss.str().c_str());
-      std_msgs::Int32 status;
-      status.data = 1;
-      control_pub.publish(status);
-      isError = false;
-      robot_is_stop = false;
-    }
   }
   //std::cout << "laster_manual_count " << laster_manual_count << " laster_recover_count" << laster_recover_count << std::endl;
+  if (laster_manual_count >= laster_recover_count && isError && robot_is_stop)
+  {
+    clear_count = 0;
+    ostringstream oss;
+    oss.str("");
+    oss << "buffer size 小于阈值，恢复移动";
+    syslog(LOG_INFO, oss.str().c_str());
+    std_msgs::Int32 status;
+    status.data = 1;
+    control_pub.publish(status);
+    isError = false;
+    robot_is_stop = false;
+  }
 }
 
 int main(int argc, char **argv)
