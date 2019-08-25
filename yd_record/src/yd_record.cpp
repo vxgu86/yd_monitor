@@ -126,6 +126,19 @@ string deal(const string &srcstr)
   //ROS_INFO_STREAM("ret:    " << ret);
   return ret;
 }
+
+string dealA(const string &srcstr)
+{
+  string ret = "";
+  int srclen = srcstr.size();
+  string temp = srcstr.substr(0, srclen - 7);
+  //ROS_INFO_STREAM("temp:    " << temp);
+  int templen = temp.size();
+  ret = temp.substr(7, templen - 1);
+  //ROS_INFO_STREAM("ret:    " << ret);
+  return ret;
+}
+
 bool compare(const string &srcstr)
 {
   time_t t1 = StringToDatetime(srcstr);
@@ -230,6 +243,24 @@ int main(int argc, char **argv)
               {
                 string endName = files[num - 1];
                 string result = deal(endName);
+                ROS_INFO_STREAM(" result :" << result);
+                if (compare(result))
+                {
+                  ROS_INFO_STREAM("add strPath :" << strPath);
+                  delete_files.push_back(strPath);
+                }
+              }
+            }
+            //delete active
+            isEnd = endswith(strPath, ".active");
+            if (isEnd)
+            {
+              vector<string> files = split(strPath, "/");
+              int num = files.size();
+              if (num > 0)
+              {
+                string endName = files[num - 1];
+                string result = dealA(endName);
                 ROS_INFO_STREAM(" result :" << result);
                 if (compare(result))
                 {
