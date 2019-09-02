@@ -1,0 +1,4 @@
+<launch> 
+  <node pkg="message_sync" name="message_sync" type="message_sync" output="screen" respawn ="true">
+  </node>
+</launch>
