@@ -63,6 +63,15 @@ public:
     void isDirectory(string path);
 };
 
+void message_sync_ros_node::isDirectory(string path)
+{
+    //判断根目录下是否存在子目录，不存在创建
+    if (!boost::filesystem::exists(path))
+    {
+        boost::filesystem::create_directory(path);
+    }
+}
+
 message_sync_ros_node::message_sync_ros_node()
 {
     is_record = false;
@@ -127,15 +136,6 @@ void message_sync_ros_node::update()
     // rgb_pub.publish(data);
     // std::cout
     //     << "callback +1 " << std::endl;
-}
-
-void message_sync_ros_node::isDirectory(string path)
-{
-    //判断根目录下是否存在子目录，不存在创建
-    if (!boost::filesystem::exists(path))
-    {
-        boost::filesystem::create_directory(path);
-    }
 }
 
 void message_sync_ros_node::callback(const nav_msgs::Odometry::ConstPtr &odom_data, const sensor_msgs::CompressedImage::ConstPtr &visible_image, const sensor_msgs::CompressedImage::ConstPtr &thermal_image, const nav_msgs::Odometry::ConstPtr &yt_data)
@@ -213,7 +213,7 @@ void message_sync_ros_node::callback(const nav_msgs::Odometry::ConstPtr &odom_da
     data.vertical = yt_pose.pose.pose.position.z;
 
     rgb_pub.publish(data);
-
+    is_record = true;
     if (is_record)
     {
         count = ros::Time::now().sec;

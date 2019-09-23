@@ -1,0 +1,4 @@
+<launch> 
+  <node pkg="rtsp_ros" name="visible_rtsp" type="visible_rtsp" output="screen" respawn ="true">
+  </node>
+</launch>
