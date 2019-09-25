@@ -216,7 +216,7 @@ void message_sync_ros_node::callback(const nav_msgs::Odometry::ConstPtr &odom_da
     is_record = true;
     if (is_record)
     {
-        count = ros::Time::now().sec;
+        count = ros::Time::now().nsec;
         //start current frame
         try
         {
