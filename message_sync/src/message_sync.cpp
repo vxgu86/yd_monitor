@@ -50,7 +50,7 @@ private:
     std::string thermal_path;
     string visible_image_name;
     string thermal_image_name;
-    int count;
+    int count, scount;
     bool is_record;
     ofstream map_points;
 
@@ -216,21 +216,22 @@ void message_sync_ros_node::callback(const nav_msgs::Odometry::ConstPtr &odom_da
 
     if (is_record)
     {
-        count = ros::Time::now().nsec;
+        count = ros::Time::now().sec;
+        scount = ros::Time::now().nsec;
         //start current frame
         try
         {
             //save image
             std::stringstream v_ss;
             v_ss << visible_path << "/"
-                 << count << ".jpg";
+                 << count << "_" << scount << ".jpg";
             visible_image_name = v_ss.str();
             cout << "visible_image_name" << visible_image_name << endl;
             imwrite(visible_image_name, v_m_img, compression_params);
 
             std::stringstream t_ss;
             t_ss << thermal_path << "/"
-                 << count << ".jpg";
+                 << count << "_" << scount << ".jpg";
             thermal_image_name = t_ss.str();
             cout << "thermal_image_name " << thermal_image_name << endl;
             imwrite(thermal_image_name, t_m_img, compression_params);
@@ -276,7 +277,10 @@ int main(int argc, char **argv)
 
     while (ros::ok())
     {
-
+        // int seconds = ros::Time::now().sec;
+        // int nseconds = ros::Time::now().nsec;
+        // std::cout << "seconds:" << seconds << std::endl;
+        // std::cout << "nseconds:" << nseconds << std::endl;
         //node.update();,
         ros::spinOnce();
         rate.sleep();
