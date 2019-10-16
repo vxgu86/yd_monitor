@@ -1,0 +1,3 @@
+<launch>
+  <node pkg="path_sim" type="path_planning" name="path_planning" output="screen" respawn="true" />
+</launch>

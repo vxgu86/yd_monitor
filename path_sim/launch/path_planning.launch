@@ -1,0 +1,7 @@
+<launch>
+  <node pkg="path_sim" type="path_planning" name="path_planning" output="screen" respawn="true" >
+  <param name="a_point" value="1 0.22 3.66 1 0.22 3.66 0.00" />
+  <param name="b_point" value="1 0.22 3.66 1 0.22 3.66 0.00" />
+  <param name="c_point" value="1 0.22 3.66 1 0.22 3.66 0.00" />
+  </node>
+</launch>

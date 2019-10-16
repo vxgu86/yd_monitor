@@ -29,9 +29,9 @@ add_executable(video_sync src/video_sync.cpp  src/base64.cpp)
 add_dependencies(video_sync ${catkin_EXPORTED_TARGETS} ${catkin_INCLUDE_DIRS})
 target_link_libraries(video_sync ${catkin_LIBRARIES})
 
-#add_executable(sync_visible src/sync_visible.cpp src/base64.cpp)
-#add_dependencies(sync_visible ${catkin_EXPORTED_TARGETS} ${catkin_INCLUDE_DIRS})
-#target_link_libraries(sync_visible ${catkin_LIBRARIES})
+add_executable(sync_thermal src/sync_thermal.cpp src/base64.cpp)
+add_dependencies(sync_thermal ${catkin_EXPORTED_TARGETS} ${catkin_INCLUDE_DIRS})
+target_link_libraries(sync_thermal ${catkin_LIBRARIES})
 
 #add_executable(sync_thermal src/sync_thermal.cpp)
 #target_link_libraries(sync_thermal ${catkin_LIBRARIES})
