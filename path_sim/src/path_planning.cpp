@@ -29,6 +29,7 @@ typedef Matrix<float, 4, 1> Vector4f;
 
 enum PlanStage
 {
+    None,
     Await,
     Plan,
     ArriveArea,
@@ -59,7 +60,7 @@ private:
     ros::Subscriber pose_sub, goal_sub, path_sub, control_sub;
     geometry_msgs::PoseStamped goal, robot_pose, next_pose, a_pose, b_pose, c_pose, d_pose;
     bool is_arrived;
-    int flag_path, pos_type;
+    int pos_type;
     nav_msgs::Path path;
     Vector3d next_goal, dir, forward, right;
     Vector4f robot_qua, navigation_qua;
@@ -103,8 +104,7 @@ PathPlaning ::PathPlaning()
 
     is_arrived = true;
     pos_type = 0;
-    flag_path = 0;
-    plan_stage = Await;
+    plan_stage = None;
 }
 
 PathPlaning ::~PathPlaning()
@@ -114,7 +114,7 @@ PathPlaning ::~PathPlaning()
 void PathPlaning::path_callback(const nav_msgs::PathConstPtr &path_msg)
 {
     cout << "get planing path " << endl;
-    if (path_msg->poses.size() > 0 && plan_stage != Await)
+    if (path_msg->poses.size() > 0 && plan_stage != None && plan_stage != Finish)
     {
         path = *path_msg;
         int path_size = (50 < path_msg->poses.size()) ? 50 : path_msg->poses.size();
@@ -126,7 +126,10 @@ void PathPlaning::path_callback(const nav_msgs::PathConstPtr &path_msg)
             next_goal[2] += path.poses[i].pose.position.z;
         }
         next_goal = next_goal / path_size;
-        flag_path = 10;
+        if (plan_stage == Await)
+        {
+            plan_stage = Plan;
+        }
     }
 }
 
@@ -256,6 +259,11 @@ void PathPlaning ::pose_callback(const nav_msgs::OdometryConstPtr &pose_msg)
     robot_pose.pose.orientation.z = pose_msg->pose.pose.orientation.z;
     robot_pose.pose.orientation.w = pose_msg->pose.pose.orientation.w;
     geometry_msgs::Twist motor_control;
+    if (plan_stage == Await)
+    {
+        cout << "等待路径规划" << endl;
+        return;
+    }
     if (plan_stage == Finish)
     {
         cout << "导航结束" << endl;
@@ -266,74 +274,70 @@ void PathPlaning ::pose_callback(const nav_msgs::OdometryConstPtr &pose_msg)
     }
 
     //calc cmd
-    if (flag_path)
+    if (plan_stage == ArriveArea)
     {
-        flag_path--;
-        if (plan_stage == ArriveArea)
+        motor_control.linear.x = 0;
+        double delta_angle = robot_qua[3] - navigation_qua[3];
+        if (abs(delta_angle) > 5)
         {
-            motor_control.linear.x = 0;
-            double delta_angle = robot_qua[3] - navigation_qua[3];
-            if (abs(delta_angle) > 5)
+            if (pos_type == 1 || pos_type == 3)
             {
-                if (pos_type == 1 || pos_type == 3)
-                {
-                    cout << "到达区域，向右旋转" << endl;
-                    motor_control.angular.z = -0.3;
-                }
-                else
-                {
-                    cout << "到达区域，向左旋转" << endl;
-                    motor_control.angular.z = 0.3;
-                }
+                cout << "到达区域，向右旋转" << endl;
+                motor_control.angular.z = -0.3;
             }
             else
             {
-                cout << "到达区域，停止旋转" << endl;
-                plan_stage == Finish;
-                motor_control.angular.z = 0;
+                cout << "到达区域，向左旋转" << endl;
+                motor_control.angular.z = 0.3;
+            }
+        }
+        else
+        {
+            cout << "到达区域，停止旋转" << endl;
+            plan_stage == Finish;
+            motor_control.angular.z = 0;
+        }
+        cmd_pub.publish(motor_control);
+    }
+    else if (plan_stage == Plan)
+    {
+        next_pose.pose.position.x = next_goal[0];
+        next_pose.pose.position.y = next_goal[1];
+        next_pose.pose.position.z = next_goal[2];
+        pair<double, double> dis_ang = calculate_distance_angle(robot_pose, next_pose);
+        if (dis_ang.first > 0.1)
+        {
+            if (pos_type == 1 || pos_type == 3)
+            {
+                //right/*
+                pair<double, double> twist = calc_twist(false, dis_ang.second, dis_ang.first);
+                motor_control.linear.x = twist.first;
+                motor_control.angular.z = -twist.second;
+            }
+            else
+            {
+                //left
+                pair<double, double> twist = calc_twist(true, dis_ang.second, dis_ang.first);
+                motor_control.linear.x = twist.first;
+                motor_control.angular.z = twist.second;
             }
             cmd_pub.publish(motor_control);
         }
-        else if (plan_stage == Plan)
+        else
         {
-            next_pose.pose.position.x = next_goal[0];
-            next_pose.pose.position.y = next_goal[1];
-            next_pose.pose.position.z = next_goal[2];
+            cout << "flag_arriving_area " << endl;
+            //calc rotate type
+            Eigen::Quaterniond q(goal.pose.orientation.w, goal.pose.orientation.x, goal.pose.orientation.y, goal.pose.orientation.z);
+            Eigen::Vector3d v(1, 0, 0);
+            Eigen::Vector3d f = q * v;
+
+            next_pose.pose.position.x = goal.pose.position.x + f[0] * 5;
+            next_pose.pose.position.y = goal.pose.position.y + f[1] * 5;
+            next_pose.pose.position.z = goal.pose.position.z + f[2] * 5;
+
             pair<double, double> dis_ang = calculate_distance_angle(robot_pose, next_pose);
-            if (dis_ang.first > 0.1)
-            {
-                if (pos_type == 1 || pos_type == 3)
-                {
-                    //right/*
-                    pair<double, double> twist = calc_twist(false, dis_ang.second, dis_ang.first);
-                    motor_control.linear.x = twist.first;
-                    motor_control.angular.z = -twist.second;
-                }
-                else
-                {
-                    //left
-                    pair<double, double> twist = calc_twist(true, dis_ang.second, dis_ang.first);
-                    motor_control.linear.x = twist.first;
-                    motor_control.angular.z = twist.second;
-                }
-                cmd_pub.publish(motor_control);
-            }
-            else
-            {
-                cout << "flag_arriving_area " << endl;
-                //calc rotate type
-                Eigen::Quaterniond q(goal.pose.orientation.w, goal.pose.orientation.x, goal.pose.orientation.y, goal.pose.orientation.z);
-                Eigen::Vector3d v(1, 0, 0);
-                Eigen::Vector3d f = q * v;
 
-                next_pose.pose.position.x = goal.pose.position.x + f[0] * 5;
-                next_pose.pose.position.y = goal.pose.position.y + f[1] * 5;
-                next_pose.pose.position.z = goal.pose.position.z + f[2] * 5;
-
-                pair<double, double> dis_ang = calculate_distance_angle(robot_pose, next_pose);
-
-                plan_stage = ArriveArea;
-            }
+            plan_stage = ArriveArea;
         }
     }
 }
@@ -347,8 +351,7 @@ void PathPlaning ::goal_callback(const geometry_msgs::PoseStampedConstPtr &goal_
 {
     cout << "get goal " << endl;
     goal = *goal_msg;
-
-    plan_stage = Plan;
+    plan_stage = Await;
 
     Quaternionf quanternion = Quaternionf(goal_msg->pose.orientation.w, goal_msg->pose.orientation.x, goal_msg->pose.orientation.y, goal_msg->pose.orientation.z);
     navigation_qua << goal_msg->pose.position.x, goal_msg->pose.position.y, goal_msg->pose.position.z, radian_to_angle(quanternion.toRotationMatrix().eulerAngles(0, 1, 2)[2]);
