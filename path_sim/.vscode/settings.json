@@ -1,12 +1,5 @@
 {
     "files.associations": {
-        "core": "cpp",
-        "random": "cpp",
-        "iostream": "cpp",
-        "array": "cpp",
-        "bitset": "cpp",
-        "initializer_list": "cpp",
-        "utility": "cpp",
-        "functional": "cpp"
+        "iostream": "cpp"
     }
 }
