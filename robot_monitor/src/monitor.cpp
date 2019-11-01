@@ -210,7 +210,7 @@ void monitor_ros_node::robotCallback(const nav_msgs::Odometry::ConstPtr &data)
   if (yd_distance >= threshold_pos)
   {
     syslog(LOG_INFO, "********************threshold_pos warnning************************");
-    syslog(LOG_INFO, "HZ:%d", current_hz);
+    //syslog(LOG_INFO, "HZ:%d", current_hz);
     syslog(LOG_INFO, "position :(%d,%d,%d)", current_pose.pose.pose.position.x, current_pose.pose.pose.position.y, current_pose.pose.pose.position.z);
     syslog(LOG_INFO, "yd_distance offset:%d", yd_distance);
   }
@@ -267,7 +267,7 @@ void monitor_ros_node::jumpCallback(const std_msgs::Bool::ConstPtr &msg)
   {
     jump_total++;
     syslog(LOG_ERR, "jump callback count:%s", jump_total);
-    syslog(LOG_INFO, "jump HZ:%d", current_hz);
+    //syslog(LOG_INFO, "jump HZ:%d", current_hz);
     syslog(LOG_INFO, "jump position :(%d,%d,%d)", current_pose.pose.pose.position.x, current_pose.pose.pose.position.y, current_pose.pose.pose.position.z);
     syslog(LOG_INFO, "jump yd_distance offset:%d", yd_distance);
     syslog(LOG_INFO, "jump euler angle offset:(%d,%d,%d)", (roll_ - roll), (pitch_ - pitch), (yaw_ - yaw));
@@ -327,7 +327,7 @@ void monitor_ros_node::bufferCallback(const std_msgs::Int16::ConstPtr &msg)
       }
     }
     syslog(LOG_INFO, "********************buffer size warnning************************");
-    syslog(LOG_INFO, "HZ:%d", current_hz);
+    //syslog(LOG_INFO, "HZ:%d", current_hz);
     syslog(LOG_INFO, "position :(%d,%d,%d)", current_pose.pose.pose.position.x, current_pose.pose.pose.position.y, current_pose.pose.pose.position.z);
     syslog(LOG_INFO, "yd_distance offset:%d", yd_distance);
     syslog(LOG_INFO, "euler angle offset:(%d,%d,%d)", (roll_ - roll), (pitch_ - pitch), (yaw_ - yaw));

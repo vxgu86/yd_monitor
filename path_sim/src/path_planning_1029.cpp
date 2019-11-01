@@ -21,7 +21,6 @@
 #include "Vect.cpp"
 #include "utils.cpp"
 
-#include <math.h>
 #include "std_msgs/Int16.h"
 #include "std_msgs/Float64.h"
 
@@ -49,7 +48,7 @@ public:
     void goal_callback(const geometry_msgs::PoseStampedConstPtr &goal_msg);
     pair<double, double> calculate_distance_angle(geometry_msgs::PoseStamped self_pos, geometry_msgs::PoseStamped goal_pos);
     double radian_to_angle(double radian);
-    pair<double, double> calc_twist(float angle, float distance);
+    pair<double, double> calc_twist(bool is_left, float angle, float distance);
     float dot(Vector3d v1, Vector3d v2);
     Vector3d normalized(Vector3d v1);
     double length(Vector3d v1);
@@ -57,7 +56,6 @@ public:
     void control_callback(const std_msgs::Int16::ConstPtr &msg);
     std::vector<geometry_msgs::PoseStamped> global_plan;
     void update();
-    bool isArrived(double x, double y, double z);
 
 private:
     boost::mutex path_mutex;
@@ -65,7 +63,8 @@ private:
     ros::Publisher cmd_pub, forward_pub, right_pub, goal_pub;
     ros::Subscriber pose_sub, goal_sub, path_sub, control_sub;
     geometry_msgs::PoseStamped goal, robot_pose, next_pose, a_pose, b_pose, c_pose, d_pose;
-    int pos_type, current_num, frequency;
+    bool is_arrived;
+    int pos_type, current_num;
     nav_msgs::Path path;
     Vector3d next_goal, dir, forward, right;
     Vector4f robot_qua, navigation_qua;
@@ -73,21 +72,6 @@ private:
     PlanStage plan_stage;
     float max_velocity, max_angular;
 };
-
-bool PathPlaning::isArrived(double x, double y, double z)
-{
-
-    double dis_x = x - goal.pose.position.x;
-    double dis_y = y - goal.pose.position.y;
-    double distance = sqrt(dis_x * dis_x + dis_y * dis_y);
-
-    if (distance < 0.1)
-        return true;
-    else
-    {
-        return false;
-    }
-}
 
 PathPlaning ::PathPlaning()
 {
@@ -122,11 +106,10 @@ PathPlaning ::PathPlaning()
 
     nh.param<float>("/path_planning/max_velocity", max_velocity, 0.2);
     nh.param<float>("/path_planning/max_angular", max_angular, 0.2);
-    nh.param<int>("/path_planning/frequency", frequency, 10);
     cout << "max_velocity:" << max_velocity << endl;
     cout << "max_angular:" << max_angular << endl;
-    cout << "frequency:" << frequency << endl;
 
+    is_arrived = true;
     pos_type = 0;
     plan_stage = None;
 }
@@ -245,37 +228,41 @@ void PathPlaning::deal_str(string topic, geometry_msgs::PoseStamped *goal_msg)
     }
 }
 
-pair<double, double> PathPlaning::calc_twist(float angle, float distance)
+pair<double, double> PathPlaning::calc_twist(bool is_left, float angle, float distance)
 {
-    // float delta_rad = angle * M_PI / 180 * 0.1;
-    // delta_rad = delta_rad > max_angular ? max_angular : delta_rad;
-    // float delta_dis = 0;
+    float delta_rad = angle * M_PI / 180 * 0.1;
+    delta_rad = delta_rad > max_angular ? max_angular : delta_rad;
+    float delta_dis = 0;
+    if (angle > 30)
+    {
+        delta_dis = 0;
+    }
+    else
+    {
+        delta_dis = (30.0 - angle) / 30.0 * max_velocity;
+    }
+    return make_pair(delta_dis, delta_rad);
     // if (angle > 60)
     // {
     //     delta_dis = 0;
     // }
+    // else if (angle <= 60 && angle > 35)
+    // {
+    //     delta_dis = 0.1 * max_velocity;
+    // }
+    // else if (angle <= 35 && angle > 20)
+    // {
+    //     delta_dis = 0.2 * max_velocity;
+    // }
+    // else if (angle <= 20 && angle > 10)
+    // {
+    //     delta_dis = 0.3 * max_velocity;
+    // }
     // else
     // {
-    //     delta_dis = (60.0 - angle) / 60.0 * max_velocity;
+    //     delta_dis = 0.4 * max_velocity;
     // }
     // return make_pair(delta_dis, delta_rad);
-    if (angle > 60)
-    {
-        return make_pair(0, 0.4);
-    }
-    else if (angle <= 60 && angle > 35)
-    {
-        return make_pair(0.1 * max_velocity, 0.4);
-    }
-    else if (angle <= 35 && angle > 20)
-    {
-        return make_pair(0.2 * max_velocity, 0.3);
-    }
-    else if (angle <= 20 && angle > 5)
-    {
-        return make_pair(0.3 * max_velocity, 0.2);
-    }
-    return make_pair(0.3 * max_velocity, 0);
     /*
     if (is_left)
     {
@@ -308,9 +295,6 @@ void PathPlaning ::pose_callback(const nav_msgs::OdometryConstPtr &pose_msg)
     if (plan_stage == Await)
     {
         cout << "等待路径规划" << endl;
-        motor_control.linear.x = 0;
-        motor_control.angular.z = 0;
-        cmd_pub.publish(motor_control);
         return;
     }
     if (plan_stage == Finish)
@@ -374,34 +358,20 @@ void PathPlaning ::pose_callback(const nav_msgs::OdometryConstPtr &pose_msg)
         next_pose.pose.position.y = next_goal[1];
         next_pose.pose.position.z = next_goal[2];
         pair<double, double> dis_ang = calculate_distance_angle(robot_pose, next_pose);
-        if (!isArrived(robot_pose.pose.position.x, robot_pose.pose.position.y, robot_pose.pose.position.z))
+        if (dis_ang.first > 0.1)
         {
-            if (pos_type == 1)
+            if (pos_type == 1 || pos_type == 3)
             {
-                //forward right
-                pair<double, double> twist = calc_twist(dis_ang.second, dis_ang.first);
+                //right/*
+                pair<double, double> twist = calc_twist(false, dis_ang.second, dis_ang.first);
                 motor_control.linear.x = twist.first;
                 motor_control.angular.z = -twist.second;
             }
-            else if (pos_type == 2)
+            else
             {
-                //forward left
-                pair<double, double> twist = calc_twist(dis_ang.second, dis_ang.first);
+                //left
+                pair<double, double> twist = calc_twist(true, dis_ang.second, dis_ang.first);
                 motor_control.linear.x = twist.first;
-                motor_control.angular.z = twist.second;
-            }
-            else if (pos_type == 3)
-            {
-                //behind right
-                pair<double, double> twist = calc_twist(dis_ang.second, dis_ang.first);
-                motor_control.linear.x = 0;
-                motor_control.angular.z = -twist.second;
-            }
-            else if (pos_type == 4)
-            {
-                //behind left
-                pair<double, double> twist = calc_twist(dis_ang.second, dis_ang.first);
-                motor_control.linear.x = 0;
                 motor_control.angular.z = twist.second;
             }
             cmd_pub.publish(motor_control);
@@ -423,7 +393,7 @@ double PathPlaning::radian_to_angle(double radian)
 
 void PathPlaning ::goal_callback(const geometry_msgs::PoseStampedConstPtr &goal_msg)
 {
-    cout << "get new goal " << endl;
+    cout << "get goal " << endl;
     goal = *goal_msg;
     plan_stage = Await;
 
@@ -446,28 +416,28 @@ pair<double, double> PathPlaning::calculate_distance_angle(geometry_msgs::PoseSt
     float d1 = dot(f, normalized(dir));
 
     // publish the transform
-    // nav_msgs::Odometry fodom;
-    // fodom.header.frame_id = "map";
-    // fodom.header.stamp = ros::Time::now();
-    // fodom.pose.pose.position.x = f[0] + self_pos.pose.position.x;
-    // fodom.pose.pose.position.y = f[1] + self_pos.pose.position.y;
-    // fodom.pose.pose.position.z = f[2] + self_pos.pose.position.z;
+    nav_msgs::Odometry fodom;
+    fodom.header.frame_id = "map";
+    fodom.header.stamp = ros::Time::now();
+    fodom.pose.pose.position.x = f[0] + self_pos.pose.position.x;
+    fodom.pose.pose.position.y = f[1] + self_pos.pose.position.y;
+    fodom.pose.pose.position.z = f[2] + self_pos.pose.position.z;
 
-    // forward_pub.publish(fodom);
+    forward_pub.publish(fodom);
 
     //calc right direction
     Eigen::AngleAxisd QX90(-M_PI / 2, Eigen::Vector3d(0, 0, 1));
     Eigen::Quaterniond t_Q(QX90);
     Eigen::Vector3d r = q * t_Q * v;
 
-    // nav_msgs::Odometry rodom;
-    // rodom.header.frame_id = "map";
-    // rodom.header.stamp = ros::Time::now();
-    // rodom.pose.pose.position.x = r[0] + self_pos.pose.position.x;
-    // rodom.pose.pose.position.y = r[1] + self_pos.pose.position.y;
-    // rodom.pose.pose.position.z = r[2] + self_pos.pose.position.z;
+    nav_msgs::Odometry rodom;
+    rodom.header.frame_id = "map";
+    rodom.header.stamp = ros::Time::now();
+    rodom.pose.pose.position.x = r[0] + self_pos.pose.position.x;
+    rodom.pose.pose.position.y = r[1] + self_pos.pose.position.y;
+    rodom.pose.pose.position.z = r[2] + self_pos.pose.position.z;
 
-    // right_pub.publish(rodom);
+    right_pub.publish(rodom);
 
     float d2 = dot(r, normalized(dir));
     if (d1 > 0)
@@ -538,7 +508,7 @@ int main(int argc, char **argv)
     PathPlaning pp;
     ROS_INFO("path_sim node started...");
 
-    ros::Rate rate(10);
+    ros::Rate rate(20);
     while (ros::ok())
     {
         pp.update();

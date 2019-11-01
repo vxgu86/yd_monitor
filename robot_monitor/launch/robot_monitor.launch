@@ -1,6 +1,4 @@
 <launch>
-
-  <arg name="dataset" /> 
   <node pkg="robot_monitor" name="monitor" type="monitor" output="screen" respawn ="true">
     <param name="robotpose_topic" value="/odom_localization" />
     <param name="threshold_hz" value="13" />
@@ -18,6 +16,9 @@
     <param name="laster_sleep_time" value="60" />
     <param name="velodyne_threshold_hz" value="14" />
   </node>
-   <!-- <node pkg="robot_monitor" name="system" type="system">
-  </node> -->
+ <node pkg="robot_monitor" name="hdl_daemon" type="hdl_daemon"  output="screen" respawn ="true">
+  <param name="topic" value="/hdl/heartbeat" />
+  <param name="timeout_num" value="5" />
+  <param name="file_name" value="/home/li/restart.sh" />
+  </node> 
 </launch>

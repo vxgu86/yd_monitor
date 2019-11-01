@@ -109,7 +109,6 @@ double PathSim::radian_to_angle(double radian)
 void PathSim ::goal_callback(const geometry_msgs::PoseStampedConstPtr &goal_msg)
 {
     goal = *goal_msg;
-    is_arrived = false;
 }
 
 pair<double, double> PathSim::calculate_distance_angle(geometry_msgs::PoseStamped self_pos, geometry_msgs::PoseStamped goal_pos)
